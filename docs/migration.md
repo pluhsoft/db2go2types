@@ -6,7 +6,8 @@ nav_order: 6
 # Migration from sqlgenerator
 
 db2go2types grew out of the `sqlgenerator` package with `GenerateRepository(customGeneratedPath)`.
-The generated repositories keep their method names and signatures, so application code keeps compiling.
+This version generates the types (`models.go`) only; generating the repository layer (`queries.go`)
+is planned in [#1](https://github.com/pluhsoft/db2go2types/issues/1). Until then keep the old generator for `queries.go` or write the queries by hand.
 
 ## Calling the generator
 
@@ -40,11 +41,10 @@ db2go2types -schema contentium -out pkg/repository -diagram db_diagram.md \
 
 `.env` is read by the command only; in your own program load it before calling `DSNFromEnv`.
 
-## Differences in the generated code
+## Differences in models.go
 
+- `Update…Params` structs are not generated; they belong to the repository layer.
 - Enum constants follow the declaration order of the enum instead of alphabetical order.
-- SQL identifiers are quoted: `"contentium"."posts"`, `"id"`.
-- Arrays of enums are written as `$n::text[]::"schema"."enum"[]`; before, writing them failed.
 - Columns of unknown types are `any` instead of code that did not compile.
-- `Select…` returns `nil, err` on errors instead of an empty slice.
-- Only columns, keys and enums of the given schema are read; views are skipped.
+- `time` is imported only when used.
+- Only columns and enums of the given schema are read; views are skipped.

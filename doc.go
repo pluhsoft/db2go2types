@@ -1,18 +1,18 @@
-// Package db2go2types reads a PostgreSQL schema and generates Go code for it:
-// a type per enum, a struct per table and a repository per table with Add,
-// Update, Select, Get, Delete, Count and ExecuteQuery methods on pgx.
+// Package db2go2types reads a PostgreSQL schema and generates Go types for it:
+// a string type with constants per enum and a struct per table, ready to be
+// scanned with pgx.
 //
 // Generate from Go, e.g. in a go:generate program:
 //
 //	err := db2go2types.Generate(ctx, db2go2types.Config{
 //		DSN:       os.Getenv("DATABASE_URL"),
 //		Schema:    "public",
-//		OutputDir: "pkg/repository",
+//		OutputDir: "pkg/models",
 //	})
 //
 // or with the command:
 //
-//	go run github.com/pluhsoft/db2go2types/cmd/db2go2types@latest -schema public -out pkg/repository
+//	go run github.com/pluhsoft/db2go2types/cmd/db2go2types@latest -schema public -out pkg/models
 //
 // [Inspect], [Render] and [Diagram] are the steps of [Generate] for custom pipelines.
 //

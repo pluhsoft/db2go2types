@@ -26,7 +26,7 @@ Nullable columns become pointers (`*string`), nullable arrays become `[]any`.
 
 ## Known limits
 
-These keep the generated code compatible with the original generator and are open questions for v1:
+These keep the output compatible with the original generator and are open questions for v1:
 
 - `numeric` is `int`: values with a fraction fail to scan.
 - Nullable arrays are `[]any` instead of `[]T`.

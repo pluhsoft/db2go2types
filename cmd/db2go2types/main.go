@@ -1,6 +1,6 @@
-// Command db2go2types generates Go types and repositories from a PostgreSQL schema.
+// Command db2go2types generates Go types from a PostgreSQL schema.
 //
-//	db2go2types -schema public -out pkg/repository -diagram docs/db.md
+//	db2go2types -schema public -out pkg/models -diagram docs/db.md
 //
 // The connection string is taken from -dsn, DATABASE_URL or the POSTGRES_HOST,
 // POSTGRES_PORT, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DATABASE and
@@ -50,7 +50,6 @@ func run(ctx context.Context, args []string, stderr io.Writer) error {
 	flags.StringVar(&cfg.Schema, "schema", "", "schema to generate code for (required)")
 	flags.StringVar(&cfg.OutputDir, "out", db2go2types.DefaultOutputDir, "output directory")
 	flags.StringVar(&cfg.Package, "package", "", "package name (default: last element of -out)")
-	flags.StringVar(&cfg.PrimaryKey, "pk", db2go2types.DefaultPrimaryKey, "primary key column used by Get, skipped by Add and Update")
 	flags.StringVar(&cfg.DiagramPath, "diagram", "", "write a Mermaid diagram of the schema to this Markdown file")
 	flags.Func("enum-name", "Go name of an enum value, `value=Name`; repeatable, e.g. -enum-name '#A6D2FF=Blue'", func(s string) error {
 		value, name, ok := strings.Cut(s, "=")

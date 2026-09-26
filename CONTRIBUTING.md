@@ -80,7 +80,7 @@ A published tag cannot be changed: the Go proxy caches it forever. To withdraw a
 
 ## One-time repository setup
 
-1. **Settings → General**: default branch `develop` (create it from `main` first); allow merge commits and squash merging; enable *Automatically delete head branches*. Description and topics: `go`, `postgresql`, `pgx`, `code-generator`, `repository-pattern`.
+1. **Settings → General**: default branch `develop` (create it from `main` first); allow merge commits and squash merging; enable *Automatically delete head branches*. Description and topics: `go`, `postgresql`, `pgx`, `code-generator`, `codegen`.
 2. **Settings → Actions → General → Workflow permissions**: *Read repository contents*; enable *Allow GitHub Actions to create and approve pull requests* (backmerge).
 3. **Settings → Rules → Rulesets → Import a ruleset**: [`main.json`](.github/rulesets/main.json), [`develop.json`](.github/rulesets/develop.json), [`tags.json`](.github/rulesets/tags.json). Branches need a pull request (0 approvals) and the `verify` and `version-policy` checks; release tags cannot be moved or deleted.
 4. **Settings → Pages → Source**: *GitHub Actions*.

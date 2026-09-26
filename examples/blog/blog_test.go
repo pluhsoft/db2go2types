@@ -2,78 +2,58 @@ package main
 
 import (
 	"context"
-	"errors"
 	"testing"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/pluhsoft/db2go2types/examples/blog/repository"
+	"github.com/pluhsoft/db2go2types/examples/blog/models"
 	"github.com/pluhsoft/db2go2types/internal/pgtest"
 )
 
-func ptr[T any](v T) *T { return &v }
-
-// TestRepository runs every generated method against PostgreSQL.
-func TestRepository(t *testing.T) {
+// TestScan checks that pgx reads every column of the schema into the generated types.
+func TestScan(t *testing.T) {
 	db := pgtest.New(t, "schema.sql")
 	ctx := context.Background()
-	authors := repository.NewAuthorsRepository(db)
-	posts := repository.NewPostsRepository(db)
-
-	// Add sends every column, so column defaults do not apply: set CreatedAt.
-	author, err := authors.AddAuthors(ctx, repository.UpdateAuthorsParams{Name: "Ann", Email: ptr("ann@example.com"), CreatedAt: time.Now()}, nil)
+	_, err := db.Exec(ctx, `
+		INSERT INTO blog.authors (name) VALUES ('Ann');
+		INSERT INTO blog.posts (author_id, title, status, labels, tags, meta, published_at)
+		VALUES (1, 'Hello', 'published', '{"#A6D2FF","#BCF1A5"}', '{go,sql}', '{"lang":"en"}', now());
+		INSERT INTO blog.post_likes VALUES (1, 1);`)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	post, err := posts.AddPosts(ctx, repository.UpdatePostsParams{
-		AuthorId: author.Id,
-		Title:    "Hello",
-		Status:   repository.PostStatusDraft,
-		Labels:   []repository.LabelColor{repository.LabelColorBlue, repository.LabelColorGreen},
-		Tags:     []any{"go", "sql"},
-		Meta:     ptr[any](map[string]any{"lang": "en"}),
-	}, nil)
+	authors, err := query[models.Authors](ctx, db, `SELECT * FROM blog.authors`)
+	if err != nil || len(authors) != 1 || authors[0].Name != "Ann" || authors[0].Email != nil || authors[0].CreatedAt.IsZero() {
+		t.Errorf("authors = %+v, %v", authors, err)
+	}
+
+	// Arrays of enums are selected as text[]: pgx does not know the enum array type.
+	posts, err := query[models.Posts](ctx, db, `
+		SELECT id, author_id, title, status, labels::text[], tags, "order", views, rating, meta, published_at
+		FROM blog.posts`)
+	if err != nil || len(posts) != 1 {
+		t.Fatalf("posts = %+v, %v", posts, err)
+	}
+	p := posts[0]
+	if p.Status != models.PostStatusPublished || len(p.Labels) != 2 || p.Labels[1] != models.LabelColorGreen ||
+		len(p.Tags) != 2 || p.Rating != nil || p.Meta == nil || p.PublishedAt == nil {
+		t.Errorf("post = %+v", p)
+	}
+
+	likes, err := query[models.PostLikes](ctx, db, `SELECT * FROM blog.post_likes`)
+	if err != nil || len(likes) != 1 || likes[0].PostId != 1 {
+		t.Errorf("likes = %+v, %v", likes, err)
+	}
+}
+
+// query scans rows into T by column position: generated fields follow the table's column order.
+func query[T any](ctx context.Context, db interface {
+	Query(context.Context, string, ...any) (pgx.Rows, error)
+}, sql string) ([]T, error) {
+	rows, err := db.Query(ctx, sql)
 	if err != nil {
-		t.Fatal(err)
+		return nil, err
 	}
-	if post.Id == 0 || post.Labels[1] != repository.LabelColorGreen || len(post.Tags) != 2 {
-		t.Errorf("added post = %+v", post)
-	}
-
-	got, err := posts.GetPosts(ctx, post.Id, nil)
-	if err != nil || got.Title != "Hello" || got.Status != repository.PostStatusDraft {
-		t.Errorf("GetPosts = %+v, %v", got, err)
-	}
-
-	params := repository.UpdatePostsParams{AuthorId: author.Id, Title: "Hello, world", Status: repository.PostStatusPublished, Labels: got.Labels}
-	updated, err := posts.UpdatePosts(ctx, params, ptr("WHERE id = 1"))
-	if err != nil || updated.Status != repository.PostStatusPublished || updated.Tags != nil {
-		t.Errorf("UpdatePosts = %+v, %v", updated, err)
-	}
-
-	list, err := posts.SelectPosts(ctx, ptr("WHERE status = 'published' ORDER BY id"))
-	if err != nil || len(list) != 1 {
-		t.Errorf("SelectPosts = %+v, %v", list, err)
-	}
-	if n, err := posts.CountPosts(ctx, nil); err != nil || n != 1 {
-		t.Errorf("CountPosts = %d, %v", n, err)
-	}
-	byAuthor, err := posts.ExecuteQueryPosts(ctx,
-		`SELECT id, author_id, title, status, labels::text[], tags, "order", views, rating, meta, published_at
-		 FROM blog.posts WHERE author_id = $1`, author.Id)
-	if err != nil || len(byAuthor) != 1 {
-		t.Errorf("ExecuteQueryPosts = %+v, %v", byAuthor, err)
-	}
-
-	if err := posts.DeletePosts(ctx, ""); err == nil {
-		t.Error("DeletePosts without where deleted the table")
-	}
-	if err := posts.DeletePosts(ctx, "WHERE id = 1"); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := posts.GetPosts(ctx, post.Id, nil); !errors.Is(err, pgx.ErrNoRows) {
-		t.Errorf("GetPosts after delete: %v", err)
-	}
+	return pgx.CollectRows(rows, pgx.RowToStructByPos[T])
 }

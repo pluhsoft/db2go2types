@@ -28,7 +28,7 @@ jobs:
             printf -- '---\ntitle: Example output\nnav_order: 9\n---\n\n# Example output\n\n'
             printf 'Generated from [`examples/blog/schema.sql`](https://github.com/%s/blob/main/examples/blog/schema.sql).\n\n' "$GITHUB_REPOSITORY"
             printf '## Diagram\n\n'; cat examples/blog/schema.md
-            printf '\n## models.go\n\n```go\n'; cat examples/blog/repository/models.go; printf '```\n'
+            printf '\n## models.go\n\n```go\n'; cat examples/blog/models/models.go; printf '```\n'
           } > docs/example/index.md
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - uses: actions/jekyll-build-pages@44a6e6beabd48582f863aeeb6cb2151cc1716697 # v1.0.13

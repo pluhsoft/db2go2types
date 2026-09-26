@@ -60,14 +60,14 @@ func TestRun(t *testing.T) {
 	dir := t.TempDir()
 	var log bytes.Buffer
 	err := run(context.Background(), []string{
-		"-dsn", db.Config().ConnString(), "-schema", "blog", "-out", filepath.Join(dir, "models"),
+		"-dsn", db.Config().ConnString(), "-schema", "blog", "-out", filepath.Join(dir, "db-models"),
 		"-diagram", filepath.Join(dir, "db.md"), "-enum-name", "#A6D2FF=Blue", "-env", "", "-v",
 	}, &log)
 	if err != nil {
 		t.Fatal(err)
 	}
-	models, err := os.ReadFile(filepath.Join(dir, "models", "models.go"))
-	if err != nil || !bytes.Contains(models, []byte("package models")) || !bytes.Contains(models, []byte("LabelColorBlue")) {
+	models, err := os.ReadFile(filepath.Join(dir, "db-models", "models.go"))
+	if err != nil || !bytes.Contains(models, []byte("package dbmodels")) || !bytes.Contains(models, []byte("LabelColorBlue")) {
 		t.Errorf("models.go: %v\n%s", err, models)
 	}
 	if _, err := os.Stat(filepath.Join(dir, "db.md")); err != nil {

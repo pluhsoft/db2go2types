@@ -3,12 +3,14 @@ package db2go2types
 import (
 	"errors"
 	"fmt"
+	"go/token"
 	"io"
 	"log/slog"
 	"net"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // Config configures [Generate].
@@ -18,13 +20,10 @@ type Config struct {
 	DSN string
 	// Schema to generate code for, e.g. "public". Required.
 	Schema string
-	// OutputDir receives models.go and queries.go. Default "pkg/repository".
+	// OutputDir receives models.go. Default "pkg/models".
 	OutputDir string
 	// Package is the name of the generated package. Default: the last element of OutputDir.
 	Package string
-	// PrimaryKey is the column that Get looks up and Add and Update skip.
-	// Default "id".
-	PrimaryKey string
 	// DiagramPath is the file for the Mermaid class diagram of the schema.
 	// Empty means no diagram.
 	DiagramPath string
@@ -36,10 +35,9 @@ type Config struct {
 }
 
 // Defaults of [Config].
-const (
-	DefaultOutputDir  = "pkg/repository"
-	DefaultPrimaryKey = "id"
-)
+const DefaultOutputDir = "pkg/models"
+
+const defaultPackage = "models"
 
 func (c Config) withDefaults() (Config, error) {
 	if c.Schema == "" {
@@ -51,8 +49,8 @@ func (c Config) withDefaults() (Config, error) {
 	if c.Package == "" {
 		c.Package = packageName(c.OutputDir)
 	}
-	if c.PrimaryKey == "" {
-		c.PrimaryKey = DefaultPrimaryKey
+	if err := checkPackage(c.Package); err != nil {
+		return c, err
 	}
 	if c.Logger == nil {
 		c.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
@@ -60,17 +58,27 @@ func (c Config) withDefaults() (Config, error) {
 	return c, nil
 }
 
-// packageName derives a package name from a directory: "pkg/repository" → "repository".
+// packageName derives a package name from a directory, following Go style
+// (lower case letters and digits only): "pkg/db-models" → "dbmodels".
 func packageName(dir string) string {
 	abs, err := filepath.Abs(dir)
 	if err != nil {
 		abs = dir
 	}
-	name := lowerFirst(words(filepath.Base(abs)))
-	if name == "" {
-		return "repository"
+	name := strings.ToLower(words(filepath.Base(abs)))
+	if checkPackage(name) != nil {
+		return defaultPackage
 	}
 	return name
+}
+
+// checkPackage reports whether name can be a package clause. The name is
+// written into the generated source, so anything else is rejected.
+func checkPackage(name string) error {
+	if !token.IsIdentifier(name) || name == "_" || name == "main" {
+		return fmt.Errorf("db2go2types: %q is not a valid package name", name)
+	}
+	return nil
 }
 
 // DSNFromEnv builds a connection string from environment variables.

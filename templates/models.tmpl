@@ -20,10 +20,3 @@ type {{.GoName}} struct {
 {{- end}}
 }
 {{end}}
-{{- range .Tables}}
-type Update{{.GoName}}Params struct {
-{{- range .Params}}
-	{{.GoName}} {{.GoType}}{{if .Required}} `validate:"required"`{{end}}
-{{- end}}
-}
-{{end -}}

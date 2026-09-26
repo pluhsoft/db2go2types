@@ -38,12 +38,6 @@ func words(s string) string {
 	return b.String()
 }
 
-// lowerFirst makes the first letter lower-case: "PostTag" → "postTag".
-func lowerFirst(s string) string {
-	r, n := utf8.DecodeRuneInString(s)
-	return string(unicode.ToLower(r)) + s[n:]
-}
-
 // enumConstName is the Go constant of an enum value: PostStatus + "draft" → PostStatusDraft.
 // names maps values to custom names, e.g. "#A6D2FF" → "Blue".
 func enumConstName(enum, value string, names map[string]string) string {

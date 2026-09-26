@@ -49,13 +49,3 @@ func (s *Schema) baseGoType(pgType string) string {
 	}
 	return "any"
 }
-
-// isEnumArray reports whether the column is an array of an enum of the schema.
-// Such columns are selected as text[], which pgx scans into []EnumType.
-func (s *Schema) isEnumArray(c Column) bool {
-	if !c.IsArray() {
-		return false
-	}
-	_, ok := s.enum(c.ElementType())
-	return ok
-}

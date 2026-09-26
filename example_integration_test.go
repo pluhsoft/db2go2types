@@ -19,7 +19,7 @@ var update = flag.Bool("update", false, "rewrite golden files")
 func exampleConfig(dir string) db2go2types.Config {
 	return db2go2types.Config{
 		Schema:      "blog",
-		OutputDir:   filepath.Join(dir, "repository"),
+		OutputDir:   filepath.Join(dir, "models"),
 		DiagramPath: filepath.Join(dir, "schema.md"),
 		EnumNames:   map[string]string{"#A6D2FF": "Blue", "#F87659": "Red", "#BCF1A5": "Green"},
 	}
@@ -40,7 +40,7 @@ func TestExample(t *testing.T) {
 	if *update {
 		return
 	}
-	for _, file := range []string{"repository/models.go", "repository/queries.go", "schema.md"} {
+	for _, file := range []string{"models/models.go", "schema.md"} {
 		got, err := os.ReadFile(filepath.Join(dir, file))
 		if err != nil {
 			t.Fatal(err)
