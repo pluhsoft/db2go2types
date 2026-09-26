@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [develop, main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  STATICCHECK: honnef.co/go/tools/cmd/staticcheck@v0.8.1
+  GOVULNCHECK: golang.org/x/vuln/cmd/govulncheck@v1.8.0
+  MIN_COVERAGE: 85
+  DB2GO_TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: stable
+      - name: gofmt
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then echo "Run gofmt -w on:"; echo "$unformatted"; exit 1; fi
+      - name: go mod tidy
+        run: go mod tidy -diff
+      - run: go vet ./...
+      - run: go run "$STATICCHECK" ./...
+      - run: go run "$GOVULNCHECK" ./...
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Minimum version from go.mod and the two supported Go releases.
+        go: ['1.25', oldstable, stable]
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ matrix.go }}
+      - run: go build ./...
+      # Integration tests need DB2GO_TEST_DATABASE_URL; without it they are skipped, here they must run.
+      - run: go test -race -coverprofile=coverage.out ./...
+      - name: Coverage of the library
+        if: matrix.go == 'stable'
+        run: |
+          go test -coverprofile=core.out . > /dev/null
+          total=$(go tool cover -func=core.out | awk '/^total:/ {sub("%", "", $3); print $3}')
+          echo "Coverage: $total% (minimum $MIN_COVERAGE%)"
+          awk -v t="$total" -v m="$MIN_COVERAGE" 'BEGIN { exit !(t >= m) }'
+      - name: No skipped tests
+        run: |
+          if go test -v ./... | grep -- '--- SKIP'; then
+            echo "::error::tests were skipped; is PostgreSQL reachable?"; exit 1
+          fi
+
+  # Single required check for branch rules.
+  verify:
+    if: always()
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: All checks passed
+        run: test "${{ needs.lint.result }}" = success && test "${{ needs.test.result }}" = success
+
+  version-policy:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: stable
+      - name: Check branch and version policy
+        run: go run ./internal/release check
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+          PR_TITLE: ${{ github.event.pull_request.title }}

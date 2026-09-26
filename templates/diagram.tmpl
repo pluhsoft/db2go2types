@@ -1,0 +1,15 @@
+```mermaid
+classDiagram
+{{- range .Tables}}
+class {{.Name}} {
+{{- range .Columns}}
+  {{pgType .}} {{.Name}}{{if .IsNullable}} (nullable){{end}}
+{{- end}}
+}
+{{- end}}
+{{- range .Tables}}{{$t := .}}
+{{- range .ForeignKeys}}
+{{$t.Name}} --> {{.ForeignTable}} : {{.Column}}
+{{- end}}
+{{- end}}
+```
