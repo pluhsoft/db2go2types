@@ -1,0 +1,13 @@
+title: db2go2types
+description: Go types and pgx repositories generated from a PostgreSQL schema
+remote_theme: just-the-docs/just-the-docs@v0.12.0
+plugins:
+  - jekyll-remote-theme
+search_enabled: true
+mermaid:
+  version: "11.4.1"
+aux_links:
+  GitHub: https://github.com/pluhsoft/db2go2types
+  pkg.go.dev: https://pkg.go.dev/github.com/pluhsoft/db2go2types
+aux_links_new_tab: true
+footer_content: MIT License

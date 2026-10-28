@@ -1,0 +1,6 @@
+coverage.out
+core.out
+notes.md
+docs/example/
+docs/_site/
+.env

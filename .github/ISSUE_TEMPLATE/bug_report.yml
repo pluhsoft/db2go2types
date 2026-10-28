@@ -1,0 +1,30 @@
+name: Bug report
+description: The generator fails or the generated code is wrong
+labels: [bug]
+body:
+  - type: textarea
+    id: schema
+    attributes:
+      label: Schema
+      description: Minimal SQL that reproduces the problem (CREATE TYPE / CREATE TABLE).
+      render: sql
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened
+      description: Error message or the wrong generated code.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      placeholder: db2go2types v0.1.0, Go 1.26, PostgreSQL 17, pgx v5.11
+    validations:
+      required: true

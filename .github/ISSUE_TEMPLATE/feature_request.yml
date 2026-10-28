@@ -1,0 +1,16 @@
+name: Feature request
+description: A new type mapping, method or option
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What you cannot do today, with a schema example if it helps.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: The generated code or option you would like to have.
